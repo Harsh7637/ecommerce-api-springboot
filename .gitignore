@@ -4,5 +4,5 @@ target/
 .DS_Store
 *.jar
 
-# Allow static JARs to be committed (e.g., front-end builds)
+# Allow static JARs (e.g. front-end builds)
 !**/src/main/resources/static/**/*.jar
