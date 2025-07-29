@@ -1,4 +1,4 @@
-package com.harsh.ecommerce.security;
+package com.harsh.ecommerce.Security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -54,10 +54,17 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
+    // Fixed method - accepts UserDetails parameter
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", userDetails.getAuthorities().iterator().next().getAuthority());
         return createToken(claims, userDetails.getUsername());
+    }
+
+    // Overloaded method for username string
+    public String generateToken(String username) {
+        Map<String, Object> claims = new HashMap<>();
+        return createToken(claims, username);
     }
 
     private String createToken(Map<String, Object> claims, String subject) {

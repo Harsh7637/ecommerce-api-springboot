@@ -1,10 +1,11 @@
 package com.harsh.ecommerce.dto;
 
+import com.harsh.ecommerce.entity.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public class RegisterRequest {
+public class UserRegistrationDto {
 
     @NotBlank(message = "First name is required")
     @Size(min = 2, max = 50, message = "First name must be between 2 and 50 characters")
@@ -14,23 +15,28 @@ public class RegisterRequest {
     @Size(min = 2, max = 50, message = "Last name must be between 2 and 50 characters")
     private String lastName;
 
-    @Email(message = "Please provide a valid email address")
     @NotBlank(message = "Email is required")
+    @Email(message = "Please provide a valid email")
     private String email;
 
     @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters long")
+    @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
 
-    public RegisterRequest() {}
+    private String phone;
+    private Role role = Role.USER;
 
-    public RegisterRequest(String firstName, String lastName, String email, String password) {
+    // Constructors
+    public UserRegistrationDto() {}
+
+    public UserRegistrationDto(String firstName, String lastName, String email, String password) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.password = password;
     }
 
+    // Getters and Setters
     public String getFirstName() { return firstName; }
     public void setFirstName(String firstName) { this.firstName = firstName; }
 
@@ -42,4 +48,10 @@ public class RegisterRequest {
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
 }

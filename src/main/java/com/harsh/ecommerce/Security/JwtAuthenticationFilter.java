@@ -3,7 +3,7 @@ package com.harsh.ecommerce.Security;
 import com.harsh.ecommerce.service.UserDetailsServiceImpl;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import com.harsh.ecommerce.security.JwtUtil;
+import com.harsh.ecommerce.Security.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;

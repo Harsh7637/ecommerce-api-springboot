@@ -2,6 +2,8 @@ package com.harsh.ecommerce.repository;
 
 import com.harsh.ecommerce.entity.Role;
 import com.harsh.ecommerce.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,28 +16,35 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
+    // Basic queries
     Optional<User> findByEmail(String email);
-
     boolean existsByEmail(String email);
 
+    // Role-based queries
     List<User> findByRole(Role role);
+    Page<User> findByRole(Role role, Pageable pageable);
 
-    List<User> findByFirstNameAndLastName(String firstName, String lastName);
+    // Status queries
+    List<User> findByIsActive(Boolean isActive);
+    Page<User> findByIsActive(Boolean isActive, Pageable pageable);
 
-    List<User> findByCreatedAtAfter(LocalDateTime date);
+    // Search queries
+    @Query("SELECT u FROM User u WHERE " +
+            "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    Page<User> searchUsers(@Param("searchTerm") String searchTerm, Pageable pageable);
 
-    List<User> findByEnabled(boolean enabled);
+    // Date-based queries
+    List<User> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 
-    List<User> findByEmailContainingIgnoreCase(String email);
+    @Query("SELECT u FROM User u WHERE u.lastLogin IS NULL OR u.lastLogin < :cutoffDate")
+    List<User> findInactiveUsers(@Param("cutoffDate") LocalDateTime cutoffDate);
 
-    @Query("SELECT u FROM User u WHERE u.role = :role AND u.createdAt >= :date")
-    List<User> findRecentUsersByRole(@Param("role") Role role, @Param("date") LocalDateTime date);
-
+    // Statistics queries
     @Query("SELECT COUNT(u) FROM User u WHERE u.role = :role")
     long countByRole(@Param("role") Role role);
 
-    @Query(value = "SELECT * FROM users WHERE email LIKE %:domain%", nativeQuery = true)
-    List<User> findByEmailDomain(@Param("domain") String domain);
-
-    void deleteByRole(Role role);
+    @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :startDate")
+    long countNewUsersAfter(@Param("startDate") LocalDateTime startDate);
 }
