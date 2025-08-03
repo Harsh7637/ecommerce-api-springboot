@@ -15,6 +15,6 @@ public class TestController {
 
     @GetMapping("/status")  // Another endpoint: /api/test/status
     public String status() {
-        return "✅ Database connected, API running on port 8080";
+        return "Database connected, API running on port 8080";
     }
 }
