@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,7 +32,6 @@ public class ProductService {
     @Autowired
     private CategoryRepository categoryRepository;
 
-    // Create Product
     public ProductResponseDto createProduct(ProductCreateDto productDto) {
         Category category = categoryRepository.findById(productDto.getCategoryId())
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + productDto.getCategoryId()));
@@ -54,7 +54,6 @@ public class ProductService {
         return new ProductResponseDto(savedProduct);
     }
 
-    // Get Product by ID
     @Transactional(readOnly = true)
     public ProductResponseDto getProductById(Long id) {
         Product product = productRepository.findById(id)
@@ -62,7 +61,6 @@ public class ProductService {
         return new ProductResponseDto(product);
     }
 
-    // Get Product by Slug
     @Transactional(readOnly = true)
     public ProductResponseDto getProductBySlug(String slug) {
         Product product = productRepository.findBySlug(slug)
@@ -70,14 +68,12 @@ public class ProductService {
         return new ProductResponseDto(product);
     }
 
-    // Get All Products
     @Transactional(readOnly = true)
     public Page<ProductResponseDto> getAllProducts(Pageable pageable) {
         return productRepository.findAll(pageable)
                 .map(ProductResponseDto::new);
     }
 
-    // Get Products with Filters
     @Transactional(readOnly = true)
     public Page<ProductResponseDto> getProducts(ProductFilterDto filterDto) {
         Sort sort = createSort(filterDto.getSortBy(), filterDto.getSortDir());
@@ -115,7 +111,6 @@ public class ProductService {
                 .map(ProductResponseDto::new);
     }
 
-    // Update Product
     public ProductResponseDto updateProduct(Long id, ProductCreateDto productDto) {
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
@@ -140,21 +135,34 @@ public class ProductService {
         return new ProductResponseDto(updatedProduct);
     }
 
-    // Delete Product
+    // ✅ NEW METHOD: Update product image
+    public ProductResponseDto updateProductImage(Long id, String imageUrl) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+
+        List<String> currentImages = product.getImages();
+        if (currentImages == null) {
+            currentImages = new ArrayList<>();
+        }
+        currentImages.add(imageUrl);
+
+        product.setImages(currentImages);
+        Product updatedProduct = productRepository.save(product);
+        return new ProductResponseDto(updatedProduct);
+    }
+
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
         productRepository.delete(product);
     }
 
-    // Get Products by Category
     @Transactional(readOnly = true)
     public Page<ProductResponseDto> getProductsByCategory(Long categoryId, Pageable pageable) {
         return productRepository.findByCategoryId(categoryId, pageable)
                 .map(ProductResponseDto::new);
     }
 
-    // Get Featured Products
     @Transactional(readOnly = true)
     public List<ProductResponseDto> getFeaturedProducts() {
         return productRepository.findByIsFeaturedTrueAndIsActiveTrueOrderBySortOrderAsc()
@@ -163,14 +171,12 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
-    // Get Latest Products
     @Transactional(readOnly = true)
     public Page<ProductResponseDto> getLatestProducts(Pageable pageable) {
         return productRepository.findLatestProducts(pageable)
                 .map(ProductResponseDto::new);
     }
 
-    // Stock Management
     public void updateStock(Long productId, Integer newStock) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + productId));
@@ -192,7 +198,6 @@ public class ProductService {
         productRepository.save(product);
     }
 
-    // Get Low Stock Products
     @Transactional(readOnly = true)
     public List<ProductResponseDto> getLowStockProducts(Integer threshold) {
         return productRepository.findLowStockProducts(threshold)
@@ -201,7 +206,6 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
-    // Get Out of Stock Products
     @Transactional(readOnly = true)
     public List<ProductResponseDto> getOutOfStockProducts() {
         return productRepository.findOutOfStockProducts()
@@ -210,15 +214,12 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
-    // Helper method to create Sort object
     private Sort createSort(String sortBy, String sortDir) {
         Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ?
                 Sort.Direction.DESC : Sort.Direction.ASC;
-
         return Sort.by(direction, sortBy);
     }
 
-    // Product Statistics
     @Transactional(readOnly = true)
     public long getTotalActiveProducts() {
         return productRepository.countActiveProducts();

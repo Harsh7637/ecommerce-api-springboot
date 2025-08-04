@@ -6,17 +6,38 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.Map;
 
 @Service
 public class CloudinaryService {
 
-    private final Cloudinary cloudinary;
+    @Value("${cloudinary.cloud-name}")
+    private String cloudName;
 
-    public CloudinaryService(@Value("${cloudinary.cloud-name}") String cloudName,
-                             @Value("${cloudinary.api-key}") String apiKey,
-                             @Value("${cloudinary.api-secret}") String apiSecret) {
+    @Value("${cloudinary.api-key}")
+    private String apiKey;
+
+    @Value("${cloudinary.api-secret}")
+    private String apiSecret;
+
+    private Cloudinary cloudinary;
+
+    @PostConstruct
+    public void init() {
+        // Validate that properties are loaded
+        if (cloudName == null || cloudName.trim().isEmpty()) {
+            throw new RuntimeException("Cloudinary cloud-name is not configured");
+        }
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            throw new RuntimeException("Cloudinary api-key is not configured");
+        }
+        if (apiSecret == null || apiSecret.trim().isEmpty()) {
+            throw new RuntimeException("Cloudinary api-secret is not configured");
+        }
+
+        // Initialize Cloudinary
         this.cloudinary = new Cloudinary(ObjectUtils.asMap(
                 "cloud_name", cloudName,
                 "api_key", apiKey,
@@ -27,6 +48,10 @@ public class CloudinaryService {
     public String uploadImage(MultipartFile file, String folder) {
         if (file == null || file.isEmpty()) {
             throw new RuntimeException("File is empty or null");
+        }
+
+        if (cloudinary == null) {
+            throw new RuntimeException("Cloudinary is not initialized");
         }
 
         try {
@@ -52,6 +77,10 @@ public class CloudinaryService {
     }
 
     public void deleteImage(String publicId) {
+        if (cloudinary == null) {
+            throw new RuntimeException("Cloudinary is not initialized");
+        }
+
         try {
             cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
         } catch (IOException e) {

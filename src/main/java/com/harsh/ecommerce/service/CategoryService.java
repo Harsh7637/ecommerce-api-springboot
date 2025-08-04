@@ -21,7 +21,6 @@ public class CategoryService {
     @Autowired
     private CategoryRepository categoryRepository;
 
-    // Create Category
     public CategoryDto createCategory(CategoryDto categoryDto) {
         if (categoryRepository.existsByName(categoryDto.getName())) {
             throw new DuplicateCategoryException("Category with name '" + categoryDto.getName() + "' already exists");
@@ -32,7 +31,6 @@ public class CategoryService {
         return new CategoryDto(savedCategory);
     }
 
-    // Get Category by ID
     @Transactional(readOnly = true)
     public CategoryDto getCategoryById(Long id) {
         Category category = categoryRepository.findById(id)
@@ -40,7 +38,6 @@ public class CategoryService {
         return new CategoryDto(category);
     }
 
-    // Get Category by Slug
     @Transactional(readOnly = true)
     public CategoryDto getCategoryBySlug(String slug) {
         Category category = categoryRepository.findBySlug(slug)
@@ -48,14 +45,12 @@ public class CategoryService {
         return new CategoryDto(category);
     }
 
-    // Get All Categories
     @Transactional(readOnly = true)
     public Page<CategoryDto> getAllCategories(Pageable pageable) {
         return categoryRepository.findAll(pageable)
                 .map(CategoryDto::new);
     }
 
-    // Get Active Categories
     @Transactional(readOnly = true)
     public List<CategoryDto> getActiveCategories() {
         return categoryRepository.findByIsActiveTrueOrderBySortOrderAscNameAsc()
@@ -64,19 +59,16 @@ public class CategoryService {
                 .collect(Collectors.toList());
     }
 
-    // Search Categories
     @Transactional(readOnly = true)
     public Page<CategoryDto> searchCategories(String searchTerm, Pageable pageable) {
         return categoryRepository.searchCategories(searchTerm, pageable)
                 .map(CategoryDto::new);
     }
 
-    // Update Category
     public CategoryDto updateCategory(Long id, CategoryDto categoryDto) {
         Category existingCategory = categoryRepository.findById(id)
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + id));
 
-        // Check for duplicate name (excluding current category)
         if (!existingCategory.getName().equals(categoryDto.getName()) &&
                 categoryRepository.existsByName(categoryDto.getName())) {
             throw new DuplicateCategoryException("Category with name '" + categoryDto.getName() + "' already exists");
@@ -92,7 +84,15 @@ public class CategoryService {
         return new CategoryDto(updatedCategory);
     }
 
-    // Delete Category
+    public CategoryDto updateCategoryImage(Long id, String imageUrl) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + id));
+
+        category.setImageUrl(imageUrl);
+        Category updatedCategory = categoryRepository.save(category);
+        return new CategoryDto(updatedCategory);
+    }
+
     public void deleteCategory(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + id));
@@ -104,7 +104,6 @@ public class CategoryService {
         categoryRepository.delete(category);
     }
 
-    // Toggle Category Status
     public CategoryDto toggleCategoryStatus(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + id));
@@ -114,7 +113,6 @@ public class CategoryService {
         return new CategoryDto(updatedCategory);
     }
 
-    // Get Categories by Product Count
     @Transactional(readOnly = true)
     public List<CategoryDto> getCategoriesByProductCount() {
         return categoryRepository.findCategoriesByProductCount()
@@ -123,7 +121,6 @@ public class CategoryService {
                 .collect(Collectors.toList());
     }
 
-    // Category Statistics
     @Transactional(readOnly = true)
     public long getActiveCategoryCount() {
         return categoryRepository.countActiveCategories();
