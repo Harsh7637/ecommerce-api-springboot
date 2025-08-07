@@ -161,6 +161,14 @@ public class Product {
         this.stockQuantity += quantity;
     }
 
+    public Integer getStock() {
+        return stockQuantity;
+    }
+    public void setStock(Integer stock) {
+        this.stockQuantity = stock;
+    }
+
+
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
