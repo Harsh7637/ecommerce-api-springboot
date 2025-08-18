@@ -1,5 +1,6 @@
 package com.harsh.ecommerce.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference; // Add this import
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -14,6 +15,7 @@ public class WishlistItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonBackReference // Add this annotation to break the circular reference
     @ManyToOne
     @JoinColumn(name = "wishlist_id", nullable = false)
     private Wishlist wishlist;
@@ -30,6 +32,7 @@ public class WishlistItem {
         addedAt = LocalDateTime.now();
     }
 
+    // Getters and Setters remain the same
     public Long getId() {
         return id;
     }

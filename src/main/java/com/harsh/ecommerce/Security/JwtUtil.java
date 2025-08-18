@@ -21,8 +21,14 @@ public class JwtUtil {
     @Value("${app.jwt.expiration}")
     private int jwtExpirationMs;
 
-    public String extractUsername(String token) {
+    // ✅ FIXED: Consistent method naming - this method is called by the filter
+    public String getUsernameFromToken(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    // Keep both method names for backward compatibility
+    public String extractUsername(String token) {
+        return getUsernameFromToken(token);
     }
 
     public Date extractExpiration(String token) {
@@ -113,7 +119,7 @@ public class JwtUtil {
 
     public Boolean validateToken(String token, UserDetails userDetails) {
         try {
-            final String username = extractUsername(token);
+            final String username = getUsernameFromToken(token);
             return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
         } catch (Exception e) {
             return false;

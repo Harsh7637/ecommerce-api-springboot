@@ -83,11 +83,11 @@ public class PaymentService {
                     // FIXED: Use manual confirmation for testing
                     .setConfirmationMethod(PaymentIntentCreateParams.ConfirmationMethod.MANUAL)
                     // FIXED: Disable automatic payment methods to avoid redirect issues
-                    .setAutomaticPaymentMethods(
-                            PaymentIntentCreateParams.AutomaticPaymentMethods.builder()
-                                    .setEnabled(false)
-                                    .build()
-                    )
+//                    .setAutomaticPaymentMethods(
+//                            PaymentIntentCreateParams.AutomaticPaymentMethods.builder()
+//                                    .setEnabled(false)
+//                                    .build()
+//                    )
                     .addPaymentMethodType("card") // Only allow cards for testing
                     .build();
 
