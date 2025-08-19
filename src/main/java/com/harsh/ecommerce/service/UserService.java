@@ -31,6 +31,9 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private EmailService emailService; // Added EmailService
+
     public UserResponseDto createUser(UserRegistrationDto registrationDto) {
         if (userRepository.existsByEmail(registrationDto.getEmail())) {
             throw new EmailAlreadyExistsException("Email already exists: " + registrationDto.getEmail());
@@ -45,6 +48,18 @@ public class UserService {
         user.setRole(registrationDto.getRole());
 
         User savedUser = userRepository.save(user);
+
+        // FIXED: Send welcome email for new user registration
+        try {
+            emailService.sendWelcomeEmail(
+                    savedUser.getEmail(),
+                    savedUser.getFirstName() + " " + savedUser.getLastName()
+            );
+            System.out.println("✅ Welcome email sent to: " + savedUser.getEmail());
+        } catch (Exception e) {
+            System.err.println("❌ Failed to send welcome email: " + e.getMessage());
+        }
+
         return new UserResponseDto(savedUser);
     }
 

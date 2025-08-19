@@ -38,7 +38,8 @@ public class PaymentService {
     private final RefundRepository refundRepository;
     private final PaymentAuditLogRepository auditLogRepository;
     private final OrderService orderService;
-    private final OrderRepository orderRepository; // Add this
+    private final OrderRepository orderRepository;
+    private final EmailService emailService;
 
     @Value("${stripe.secret.key}")
     private String stripeSecretKey;
@@ -47,16 +48,16 @@ public class PaymentService {
                           RefundRepository refundRepository,
                           PaymentAuditLogRepository auditLogRepository,
                           OrderService orderService,
-                          OrderRepository orderRepository) { // Add this parameter
+                          OrderRepository orderRepository,
+                          EmailService emailService) {
         this.paymentRepository = paymentRepository;
         this.refundRepository = refundRepository;
         this.auditLogRepository = auditLogRepository;
         this.orderService = orderService;
-        this.orderRepository = orderRepository; // Add this
+        this.orderRepository = orderRepository;
+        this.emailService = emailService;
     }
 
-    // Updated method to include userId validation
-    // Add this method to your PaymentService class
     public PaymentIntentResponse createPaymentIntent(PaymentIntentRequest request, Long userId) {
         try {
             Order order = orderRepository.findById(request.getOrderId())
@@ -73,22 +74,14 @@ public class PaymentService {
 
             Stripe.apiKey = stripeSecretKey;
 
-            // FIXED: Create PaymentIntent with simpler configuration for testing
             PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
                     .setAmount(request.getAmount().multiply(new BigDecimal("100")).longValue())
                     .setCurrency(request.getCurrency())
                     .setReceiptEmail(request.getCustomerEmail())
                     .putMetadata("order_id", String.valueOf(request.getOrderId()))
                     .putMetadata("user_id", String.valueOf(userId))
-                    // FIXED: Use manual confirmation for testing
                     .setConfirmationMethod(PaymentIntentCreateParams.ConfirmationMethod.MANUAL)
-                    // FIXED: Disable automatic payment methods to avoid redirect issues
-//                    .setAutomaticPaymentMethods(
-//                            PaymentIntentCreateParams.AutomaticPaymentMethods.builder()
-//                                    .setEnabled(false)
-//                                    .build()
-//                    )
-                    .addPaymentMethodType("card") // Only allow cards for testing
+                    .addPaymentMethodType("card")
                     .build();
 
             PaymentIntent paymentIntent = PaymentIntent.create(params);
@@ -117,7 +110,6 @@ public class PaymentService {
         }
     }
 
-    // Keep the old method for backward compatibility, but make it call the new one
     public PaymentIntentResponse createPaymentIntent(PaymentIntentRequest request) {
         throw new PaymentProcessingException("User ID is required for payment processing");
     }
@@ -126,7 +118,6 @@ public class PaymentService {
         try {
             Stripe.apiKey = stripeSecretKey;
 
-            // CRITICAL FIX: Actually retrieve and verify the PaymentIntent status
             PaymentIntent paymentIntent = PaymentIntent.retrieve(request.getPaymentIntentId());
 
             System.out.println("🔍 Stripe PaymentIntent Status: " + paymentIntent.getStatus());
@@ -139,7 +130,6 @@ public class PaymentService {
 
             Payment payment = optionalPayment.get();
 
-            // CRITICAL FIX: Only mark as SUCCEEDED if Stripe actually shows it as succeeded
             PaymentTransactionStatus newStatus;
             switch (paymentIntent.getStatus()) {
                 case "succeeded":
@@ -296,7 +286,6 @@ public class PaymentService {
         try {
             Stripe.apiKey = stripeSecretKey;
 
-            // Find payment in database
             Payment payment = paymentRepository.findByStripePaymentIntentId(request.getPaymentIntentId())
                     .orElseThrow(() -> new PaymentNotFoundException("Payment not found for intent: " + request.getPaymentIntentId()));
 
@@ -306,38 +295,32 @@ public class PaymentService {
             System.out.println("   - Database Status: " + payment.getStatus());
             System.out.println("   - Amount: " + payment.getAmount());
 
-            // Check database status first
             if (payment.getStatus() != PaymentTransactionStatus.SUCCEEDED) {
                 throw new PaymentProcessingException("Cannot refund payment with status: " + payment.getStatus() +
                         ". Only payments with SUCCEEDED status can be refunded.");
             }
 
-            // Now check the actual Stripe PaymentIntent status
             PaymentIntent stripePaymentIntent = PaymentIntent.retrieve(request.getPaymentIntentId());
             System.out.println("🔍 Stripe PaymentIntent details:");
             System.out.println("   - Stripe Status: " + stripePaymentIntent.getStatus());
             System.out.println("   - Amount: " + stripePaymentIntent.getAmount());
             System.out.println("   - Amount Received: " + stripePaymentIntent.getAmountReceived());
 
-            // Check if PaymentIntent was actually charged successfully
             if (!"succeeded".equals(stripePaymentIntent.getStatus())) {
                 throw new PaymentProcessingException("Stripe PaymentIntent status is '" + stripePaymentIntent.getStatus() +
                         "', but must be 'succeeded' to process refund. Please check the payment status in Stripe dashboard.");
             }
 
-            // Check if the PaymentIntent has been actually charged (amount received should be > 0)
             if (stripePaymentIntent.getAmountReceived() == null || stripePaymentIntent.getAmountReceived() == 0) {
                 throw new PaymentProcessingException("PaymentIntent has not been charged yet. Amount received is 0. Cannot process refund without successful charge.");
             }
 
-            // Validate refund amount
             BigDecimal maxRefundableAmount = new BigDecimal(stripePaymentIntent.getAmountReceived()).divide(new BigDecimal("100"));
             if (request.getAmount().compareTo(maxRefundableAmount) > 0) {
                 throw new PaymentProcessingException("Refund amount (" + request.getAmount() +
                         ") cannot exceed the charged amount (" + maxRefundableAmount + ")");
             }
 
-            // Process the refund
             RefundCreateParams params = RefundCreateParams.builder()
                     .setPaymentIntent(request.getPaymentIntentId())
                     .setAmount(request.getAmount().multiply(new BigDecimal("100")).longValue())
@@ -355,7 +338,6 @@ public class PaymentService {
             System.out.println("   - Status: " + stripeRefund.getStatus());
             System.out.println("   - Amount: " + stripeRefund.getAmount());
 
-            // Save refund to database
             com.harsh.ecommerce.entity.Refund refundEntity = new com.harsh.ecommerce.entity.Refund();
             refundEntity.setPayment(payment);
             refundEntity.setStripeRefundId(stripeRefund.getId());
@@ -366,7 +348,17 @@ public class PaymentService {
 
             com.harsh.ecommerce.entity.Refund savedRefund = refundRepository.save(refundEntity);
 
-            // Create audit log
+            try {
+                emailService.sendRefundConfirmationEmail(
+                        payment.getOrder().getUser().getEmail(),
+                        payment.getOrder().getOrderNumber(),
+                        request.getAmount().doubleValue()
+                );
+                System.out.println("✅ Refund confirmation email sent to: " + payment.getOrder().getUser().getEmail());
+            } catch (Exception e) {
+                System.err.println("❌ Failed to send refund confirmation email: " + e.getMessage());
+            }
+
             PaymentAuditLog auditLog = new PaymentAuditLog();
             auditLog.setPayment(payment);
             auditLog.setAction("REFUND_INITIATED");
@@ -449,13 +441,12 @@ public class PaymentService {
 
             PaymentIntent stripePaymentIntent = PaymentIntent.retrieve(paymentIntentId);
 
-            // CRITICAL FIX: Correct status mapping
             PaymentTransactionStatus actualStatus;
             switch (stripePaymentIntent.getStatus()) {
                 case "succeeded":
                     actualStatus = PaymentTransactionStatus.SUCCEEDED;
                     break;
-                case "requires_payment_method": // This means payment failed/was never completed
+                case "requires_payment_method":
                 case "canceled":
                     actualStatus = PaymentTransactionStatus.FAILED;
                     break;
@@ -466,7 +457,7 @@ public class PaymentService {
                     actualStatus = PaymentTransactionStatus.PENDING;
                     break;
                 default:
-                    actualStatus = PaymentTransactionStatus.FAILED; // Default to failed for unknown statuses
+                    actualStatus = PaymentTransactionStatus.FAILED;
             }
 
             System.out.println("🔄 Syncing payment status:");
@@ -527,7 +518,6 @@ public class PaymentService {
                 }
             }
         } else {
-            // REMOVED: Mock payment creation - this was causing data inconsistencies
             System.err.println("⚠️  Payment not found for intent ID: " + stripePaymentIntentId);
             throw new PaymentNotFoundException("Payment not found for intent: " + stripePaymentIntentId);
         }

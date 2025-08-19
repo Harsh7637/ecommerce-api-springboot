@@ -27,19 +27,22 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final CartService cartService;
+    private final EmailService emailService; // Added EmailService
 
     public OrderService(OrderRepository orderRepository,
                         OrderItemRepository orderItemRepository,
                         CartRepository cartRepository,
                         ProductRepository productRepository,
                         UserRepository userRepository,
-                        CartService cartService) {
+                        CartService cartService,
+                        EmailService emailService) { // Added EmailService injection
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.cartRepository = cartRepository;
         this.productRepository = productRepository;
         this.userRepository = userRepository;
         this.cartService = cartService;
+        this.emailService = emailService; // Initialize EmailService
     }
 
     public void updateOrderStatus(Long orderId, OrderStatus status) {
@@ -94,11 +97,21 @@ public class OrderService {
         }
 
         order.calculateTotals();
-
         order = orderRepository.save(order);
 
-        cartService.clearCart(userId);
+        // FIXED: Send order confirmation email
+        try {
+            emailService.sendOrderConfirmationEmail(
+                    user.getEmail(),
+                    order.getOrderNumber(),
+                    order.getTotalAmount().doubleValue()
+            );
+            System.out.println("✅ Order confirmation email sent to: " + user.getEmail());
+        } catch (Exception e) {
+            System.err.println("❌ Failed to send order confirmation email: " + e.getMessage());
+        }
 
+        cartService.clearCart(userId);
         return convertToOrderDto(order);
     }
 
@@ -146,17 +159,49 @@ public class OrderService {
         Order order = orderRepository.findByIdWithItems(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
+        OrderStatus oldStatus = order.getStatus();
         order.setStatus(updateDto.getStatus());
 
         switch (updateDto.getStatus()) {
             case SHIPPED:
                 order.markAsShipped();
+                // FIXED: Send shipping notification email
+                try {
+                    emailService.sendShippingNotificationEmail(
+                            order.getUser().getEmail(),
+                            order.getOrderNumber(),
+                            "TRK" + System.currentTimeMillis() // Generate tracking number
+                    );
+                    System.out.println("✅ Shipping notification email sent to: " + order.getUser().getEmail());
+                } catch (Exception e) {
+                    System.err.println("❌ Failed to send shipping notification email: " + e.getMessage());
+                }
                 break;
             case DELIVERED:
                 order.markAsDelivered();
+                // FIXED: Send delivery confirmation email
+                try {
+                    emailService.sendDeliveryConfirmationEmail(
+                            order.getUser().getEmail(),
+                            order.getOrderNumber()
+                    );
+                    System.out.println("✅ Delivery confirmation email sent to: " + order.getUser().getEmail());
+                } catch (Exception e) {
+                    System.err.println("❌ Failed to send delivery confirmation email: " + e.getMessage());
+                }
                 break;
             case CANCELLED:
                 handleOrderCancellation(order);
+                // FIXED: Send order cancellation email
+                try {
+                    emailService.sendOrderCancellationEmail(
+                            order.getUser().getEmail(),
+                            order.getOrderNumber()
+                    );
+                    System.out.println("✅ Order cancellation email sent to: " + order.getUser().getEmail());
+                } catch (Exception e) {
+                    System.err.println("❌ Failed to send order cancellation email: " + e.getMessage());
+                }
                 break;
             default:
                 break;
@@ -167,7 +212,6 @@ public class OrderService {
         }
 
         order = orderRepository.save(order);
-
         return convertToOrderDto(order);
     }
 
@@ -185,6 +229,17 @@ public class OrderService {
         handleOrderCancellation(order);
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
+
+        // FIXED: Send order cancellation email
+        try {
+            emailService.sendOrderCancellationEmail(
+                    user.getEmail(),
+                    order.getOrderNumber()
+            );
+            System.out.println("✅ Order cancellation email sent to: " + user.getEmail());
+        } catch (Exception e) {
+            System.err.println("❌ Failed to send order cancellation email: " + e.getMessage());
+        }
     }
 
     public void updatePaymentStatus(Long orderId, PaymentStatus status) {
@@ -195,7 +250,39 @@ public class OrderService {
         Order order = orderRepository.findByIdWithItems(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
+        PaymentStatus oldStatus = order.getPaymentStatus();
         order.setPaymentStatus(updateDto.getStatus());
+
+        // FIXED: Send payment-related emails
+        if (oldStatus != updateDto.getStatus()) {
+            switch (updateDto.getStatus()) {
+                case COMPLETED:
+                    try {
+                        emailService.sendPaymentSuccessEmail(
+                                order.getUser().getEmail(),
+                                order.getOrderNumber(),
+                                order.getTotalAmount().doubleValue()
+                        );
+                        System.out.println("✅ Payment success email sent to: " + order.getUser().getEmail());
+                    } catch (Exception e) {
+                        System.err.println("❌ Failed to send payment success email: " + e.getMessage());
+                    }
+                    break;
+                case FAILED:
+                    try {
+                        emailService.sendPaymentFailedEmail(
+                                order.getUser().getEmail(),
+                                order.getOrderNumber()
+                        );
+                        System.out.println("✅ Payment failed email sent to: " + order.getUser().getEmail());
+                    } catch (Exception e) {
+                        System.err.println("❌ Failed to send payment failed email: " + e.getMessage());
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
 
         if (updateDto.getNotes() != null) {
             order.setNotes(updateDto.getNotes());
