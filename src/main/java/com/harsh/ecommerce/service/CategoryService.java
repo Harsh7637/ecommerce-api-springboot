@@ -120,6 +120,13 @@ public class CategoryService {
                 .map(CategoryDto::new)
                 .collect(Collectors.toList());
     }
+    @Transactional(readOnly = true)
+    public List<CategoryDto> getAllCategories() {
+        return categoryRepository.findAll()
+                .stream()
+                .map(CategoryDto::new)
+                .collect(Collectors.toList());
+    }
 
     @Transactional(readOnly = true)
     public long getActiveCategoryCount() {

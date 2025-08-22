@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle != null} ? ${pageTitle + ' - TechStore'} : 'TechStore'">TechStore</title>
+
+    <!-- Bootstrap CSS -->
+    <link th:href="@{/webjars/bootstrap/5.3.2/css/bootstrap.min.css}" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link th:href="@{/webjars/font-awesome/6.4.0/css/all.min.css}" rel="stylesheet">
+
+    <style>
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        .product-card {
+            transition: transform 0.2s;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        .price {
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        .cart-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 100px 0;
+        }
+        .category-card {
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .category-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .alert-container {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 1050;
+            width: 300px;
+        }
+    </style>
+</head>
+<body>
+<!-- Alert Container -->
+<div id="alertContainer" class="alert-container"></div>
+
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <div class="container">
+        <a class="navbar-brand" th:href="@{/}">
+            <i class="fas fa-store"></i> TechStore
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/}">
+                        <i class="fas fa-home"></i> Home
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/products}">
+                        <i class="fas fa-box"></i> Products
+                    </a>
+                </li>
+                <li class="nav-item dropdown" sec:authorize="hasRole('ADMIN')">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-cog"></i> Admin
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" th:href="@{/admin}">Dashboard</a></li>
+                        <li><a class="dropdown-item" th:href="@{/admin/products}">Manage Products</a></li>
+                        <li><a class="dropdown-item" th:href="@{/admin/orders}">Manage Orders</a></li>
+                        <li><a class="dropdown-item" th:href="@{/admin/categories}">Manage Categories</a></li>
+                    </ul>
+                </li>
+            </ul>
+
+            <!-- Search Form -->
+            <form class="d-flex me-3" th:action="@{/products}" method="get">
+                <input class="form-control me-2" type="search" name="search" placeholder="Search products..." aria-label="Search"
+                       th:value="${currentSearch != null} ? ${currentSearch} : ''">
+                <button class="btn btn-outline-light" type="submit">
+                    <i class="fas fa-search"></i>
+                </button>
+            </form>
+
+            <ul class="navbar-nav">
+                <!-- Cart -->
+                <li class="nav-item" sec:authorize="isAuthenticated()">
+                    <a class="nav-link position-relative" th:href="@{/cart}">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="cart-badge" id="cartCount">0</span>
+                    </a>
+                </li>
+
+                <!-- User Menu -->
+                <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user"></i>
+                        <span sec:authentication="name">User</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" th:href="@{/profile}">Profile</a></li>
+                        <li><a class="dropdown-item" th:href="@{/orders}">My Orders</a></li>
+                        <li><a class="dropdown-item" th:href="@{/wishlist}">Wishlist</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="logout()">Logout</a></li>
+                    </ul>
+                </li>
+
+                <!-- Login/Register -->
+                <li class="nav-item" sec:authorize="!isAuthenticated()">
+                    <a class="nav-link" th:href="@{/login}">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                </li>
+                <li class="nav-item" sec:authorize="!isAuthenticated()">
+                    <a class="nav-link" th:href="@{/register}">
+                        <i class="fas fa-user-plus"></i> Register
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main>
+    <div th:replace="~{${content} :: content}">
+        <!-- Default content if no fragment specified -->
+        <div class="container mt-4">
+            <h1>Welcome to TechStore</h1>
+            <p>Your content will appear here.</p>
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<footer class="bg-dark text-light py-5 mt-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <h5><i class="fas fa-store"></i> TechStore</h5>
+                <p>Your one-stop destination for cutting-edge technology and innovative devices.</p>
+                <div>
+                    <a href="#" class="text-light me-3"><i class="fab fa-facebook"></i></a>
+                    <a href="#" class="text-light me-3"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="text-light me-3"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="text-light"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <h6>Shop</h6>
+                <ul class="list-unstyled">
+                    <li><a th:href="@{/products}" class="text-light">All Products</a></li>
+                    <li><a href="#" class="text-light">Electronics</a></li>
+                    <li><a href="#" class="text-light">Computers</a></li>
+                    <li><a href="#" class="text-light">Accessories</a></li>
+                </ul>
+            </div>
+            <div class="col-md-2">
+                <h6>Account</h6>
+                <ul class="list-unstyled">
+                    <li><a th:href="@{/profile}" class="text-light">My Profile</a></li>
+                    <li><a th:href="@{/orders}" class="text-light">Order History</a></li>
+                    <li><a th:href="@{/cart}" class="text-light">Shopping Cart</a></li>
+                    <li><a th:href="@{/wishlist}" class="text-light">Wishlist</a></li>
+                </ul>
+            </div>
+            <div class="col-md-2">
+                <h6>Support</h6>
+                <ul class="list-unstyled">
+                    <li><a href="#" class="text-light">Contact Us</a></li>
+                    <li><a href="#" class="text-light">FAQ</a></li>
+                    <li><a href="#" class="text-light">Shipping Info</a></li>
+                    <li><a href="#" class="text-light">Returns</a></li>
+                </ul>
+            </div>
+            <div class="col-md-2">
+                <h6>Developer</h6>
+                <ul class="list-unstyled">
+                    <li><a th:href="@{/swagger-ui.html}" class="text-light">API Documentation</a></li>
+                    <li><a href="#" class="text-light">API Status</a></li>
+                </ul>
+            </div>
+        </div>
+        <hr class="my-4">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <p class="mb-0">&copy; 2024 TechStore. All rights reserved.</p>
+            </div>
+            <div class="col-md-6 text-end">
+                <p class="mb-0">Built with Spring Boot & ❤️</p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Scripts -->
+<script th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"></script>
+<script th:src="@{/webjars/bootstrap/5.3.2/js/bootstrap.bundle.min.js}"></script>
+
+<!-- Custom JavaScript -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    // Global variables
+    let authToken = localStorage.getItem('authToken');
+    let currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+
+    // Update cart count on page load
+    $(document).ready(function() {
+        if (authToken) {
+            updateCartCount();
+        }
+    });
+
+    // Update cart count
+    function updateCartCount() {
+        if (!authToken) return;
+
+        $.ajax({
+            url: '/api/cart',
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + authToken
+            },
+            success: function(response) {
+                if (response.success && response.data) {
+                    const totalItems = response.data.items.reduce((sum, item) => sum + item.quantity, 0);
+                    $('#cartCount').text(totalItems || 0);
+                } else {
+                    $('#cartCount').text('0');
+                }
+            },
+            error: function() {
+                $('#cartCount').text('0');
+            }
+        });
+    }
+
+    // Logout function
+    function logout() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('currentUser');
+        window.location.href = '/login';
+    }
+
+    // Add to cart function
+    function addToCart(productId, quantity = 1) {
+        if (!authToken) {
+            showAlert('Please login to add items to cart', 'warning');
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 1500);
+            return;
+        }
+
+        // Show loading state
+        showAlert('Adding to cart...', 'info');
+
+        $.ajax({
+            url: '/api/cart/add',
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + authToken,
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({
+                productId: productId,
+                quantity: quantity
+            }),
+            success: function(response) {
+                if (response.success) {
+                    showAlert('Product added to cart!', 'success');
+                    updateCartCount();
+                } else {
+                    showAlert(response.message || 'Failed to add to cart', 'danger');
+                }
+            },
+            error: function(xhr) {
+                let errorMessage = 'Failed to add to cart';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                } else if (xhr.status === 401) {
+                    errorMessage = 'Please login to continue';
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('currentUser');
+                } else if (xhr.status === 404) {
+                    errorMessage = 'Product not found';
+                }
+                showAlert(errorMessage, 'danger');
+            }
+        });
+    }
+
+    // Add to wishlist function
+    function addToWishlist(productId) {
+        if (!authToken) {
+            showAlert('Please login to add items to wishlist', 'warning');
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 1500);
+            return;
+        }
+
+        $.ajax({
+            url: '/api/wishlist/add',
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + authToken,
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({
+                productId: productId
+            }),
+            success: function(response) {
+                if (response.success) {
+                    showAlert('Product added to wishlist!', 'success');
+                } else {
+                    showAlert(response.message || 'Failed to add to wishlist', 'danger');
+                }
+            },
+            error: function(xhr) {
+                let errorMessage = 'Failed to add to wishlist';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                showAlert(errorMessage, 'danger');
+            }
+        });
+    }
+
+    // Show alert function
+    function showAlert(message, type) {
+        // Remove existing alerts first
+        $('#alertContainer .alert').remove();
+
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        $('#alertContainer').append(alertHtml);
+
+        // Auto-remove after 4 seconds
+        setTimeout(() => {
+            $('#alertContainer .alert').alert('close');
+        }, 4000);
+    }
+
+    // Format currency
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+        }).format(amount);
+    }
+
+    // Check authentication status
+    function checkAuth() {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            // Verify token is still valid
+            $.ajax({
+                url: '/api/auth/verify',
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                error: function() {
+                    // Token is invalid, remove it
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('currentUser');
+                    window.location.reload();
+                }
+            });
+        }
+    }
+
+    // Initialize on page load
+    $(document).ready(function() {
+        checkAuth();
+    });
+    /*]]>*/
+</script>
+
+<!-- Page-specific scripts -->
+<th:block th:replace="~{${content} :: scripts}" th:remove="tag"></th:block>
+
+</body>
+</html>

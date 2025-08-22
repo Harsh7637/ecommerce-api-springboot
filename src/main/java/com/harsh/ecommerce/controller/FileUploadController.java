@@ -1,6 +1,13 @@
 package com.harsh.ecommerce.controller;
 
 import com.harsh.ecommerce.service.CloudinaryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -13,14 +20,22 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/files")
 @CrossOrigin(origins = "*")
+@Tag(name = "📁 File Management", description = "File upload operations")
 public class FileUploadController {
 
     @Autowired
     private CloudinaryService cloudinaryService;
 
     @PostMapping("/upload/product-image")
+    @Operation(summary = "Upload a product image", description = "Uploads an image file to be used for a product. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Image uploaded successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid file or upload failed")
+    })
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> uploadProductImage(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadProductImage(
+            @Parameter(description = "Image file to upload", required = true)
+            @RequestParam("file") MultipartFile file) {
         try {
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body(createErrorResponse("Please select a file to upload"));
@@ -44,8 +59,15 @@ public class FileUploadController {
     }
 
     @PostMapping("/upload/category-image")
+    @Operation(summary = "Upload a category image", description = "Uploads an image file to be used for a category. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Image uploaded successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid file or upload failed")
+    })
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> uploadCategoryImage(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadCategoryImage(
+            @Parameter(description = "Image file to upload", required = true)
+            @RequestParam("file") MultipartFile file) {
         try {
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body(createErrorResponse("Please select a file to upload"));
@@ -69,8 +91,15 @@ public class FileUploadController {
     }
 
     @DeleteMapping("/delete-image")
+    @Operation(summary = "Delete an image", description = "Deletes an image from cloud storage using its URL. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Image deleted successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid image URL or delete failed")
+    })
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> deleteImage(@RequestParam("imageUrl") String imageUrl) {
+    public ResponseEntity<?> deleteImage(
+            @Parameter(description = "URL of the image to delete", required = true, example = "http://example.com/image.jpg")
+            @RequestParam("imageUrl") String imageUrl) {
         try {
             String publicId = cloudinaryService.extractPublicId(imageUrl);
             if (publicId != null) {

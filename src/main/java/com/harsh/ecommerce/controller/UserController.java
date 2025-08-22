@@ -6,6 +6,13 @@ import com.harsh.ecommerce.dto.UserRegistrationDto;
 import com.harsh.ecommerce.dto.UserResponseDto;
 import com.harsh.ecommerce.entity.Role;
 import com.harsh.ecommerce.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,12 +31,18 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/users")
 @CrossOrigin(origins = "*")
+@Tag(name = "👤 User - Profile", description = "User profile management (requires authentication)")
 public class UserController {
 
     @Autowired
     private UserService userService;
 
     @GetMapping("/profile")
+    @Operation(summary = "Get current user profile", description = "Retrieves the profile details of the currently authenticated user.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Profile retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<?> getCurrentUserProfile(Authentication authentication) {
         try {
@@ -50,6 +63,11 @@ public class UserController {
     }
 
     @PutMapping("/profile")
+    @Operation(summary = "Update current user profile", description = "Updates the profile details for the authenticated user.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Profile updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid update data")
+    })
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<?> updateCurrentUserProfile(
             @RequestBody UserProfileUpdateDto updateDto,
@@ -74,6 +92,11 @@ public class UserController {
     }
 
     @PutMapping("/profile/password")
+    @Operation(summary = "Change password", description = "Allows the authenticated user to change their password.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Password changed successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid old password or other error")
+    })
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<?> changePassword(
             @RequestBody PasswordChangeDto passwordChangeDto,
@@ -97,11 +120,20 @@ public class UserController {
     }
 
     @GetMapping
+    @Operation(summary = "Get all users (Admin)", description = "Retrieves a paginated list of all registered users. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Users retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Forbidden: insufficient permissions")
+    })
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAllUsers(
+            @Parameter(description = "Page number (0-based)", example = "0")
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Number of items per page", example = "10")
             @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Field to sort by", example = "createdAt")
             @RequestParam(defaultValue = "createdAt") String sortBy,
+            @Parameter(description = "Sort direction", example = "desc")
             @RequestParam(defaultValue = "desc") String sortDir) {
 
         Sort sort = sortDir.equalsIgnoreCase("desc") ?
@@ -121,8 +153,14 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get user by ID (Admin)", description = "Retrieves a single user by their ID. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "403", description = "Forbidden: insufficient permissions")
+    })
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getUserById(@PathVariable Long id) {
+    public ResponseEntity<?> getUserById(@Parameter(description = "User ID", example = "1") @PathVariable Long id) {
         try {
             UserResponseDto user = userService.getUserById(id);
 
@@ -140,10 +178,18 @@ public class UserController {
     }
 
     @GetMapping("/search")
+    @Operation(summary = "Search users (Admin)", description = "Searches for users by name or email. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Users found successfully"),
+            @ApiResponse(responseCode = "403", description = "Forbidden: insufficient permissions")
+    })
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> searchUsers(
+            @Parameter(description = "Search query", example = "john doe")
             @RequestParam String q,
+            @Parameter(description = "Page number (0-based)", example = "0")
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Number of items per page", example = "10")
             @RequestParam(defaultValue = "10") int size) {
 
         Pageable pageable = PageRequest.of(page, size);
@@ -161,10 +207,18 @@ public class UserController {
     }
 
     @GetMapping("/role/{role}")
+    @Operation(summary = "Get users by role (Admin)", description = "Retrieves a paginated list of users filtered by their role. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Users retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Forbidden: insufficient permissions")
+    })
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getUsersByRole(
+            @Parameter(description = "User role", example = "ADMIN", schema = @Schema(implementation = Role.class))
             @PathVariable Role role,
+            @Parameter(description = "Page number (0-based)", example = "0")
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Number of items per page", example = "10")
             @RequestParam(defaultValue = "10") int size) {
 
         Pageable pageable = PageRequest.of(page, size);
@@ -182,8 +236,15 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Update user details by ID (Admin)", description = "Updates a user's details. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid user data"),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "403", description = "Forbidden: insufficient permissions")
+    })
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody UserRegistrationDto updateDto) {
+    public ResponseEntity<?> updateUser(@Parameter(description = "User ID", example = "1") @PathVariable Long id, @RequestBody UserRegistrationDto updateDto) {
         try {
             UserResponseDto updatedUser = userService.updateUser(id, updateDto);
 
@@ -202,8 +263,15 @@ public class UserController {
     }
 
     @PutMapping("/{id}/role")
+    @Operation(summary = "Update user role by ID (Admin)", description = "Changes a user's role. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User role updated successfully"),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid role or other error"),
+            @ApiResponse(responseCode = "403", description = "Forbidden: insufficient permissions")
+    })
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> updateUserRole(@PathVariable Long id, @RequestParam Role role) {
+    public ResponseEntity<?> updateUserRole(@Parameter(description = "User ID", example = "1") @PathVariable Long id, @Parameter(description = "New role", example = "ADMIN", schema = @Schema(implementation = Role.class)) @RequestParam Role role) {
         try {
             UserResponseDto updatedUser = userService.updateUserRole(id, role);
 
@@ -222,8 +290,15 @@ public class UserController {
     }
 
     @PutMapping("/{id}/deactivate")
+    @Operation(summary = "Deactivate a user (Admin)", description = "Marks a user as inactive. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User deactivated successfully"),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "400", description = "User is already deactivated or other error"),
+            @ApiResponse(responseCode = "403", description = "Forbidden: insufficient permissions")
+    })
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> deactivateUser(@PathVariable Long id) {
+    public ResponseEntity<?> deactivateUser(@Parameter(description = "User ID", example = "1") @PathVariable Long id) {
         try {
             userService.deactivateUser(id);
 
@@ -241,8 +316,15 @@ public class UserController {
     }
 
     @PutMapping("/{id}/activate")
+    @Operation(summary = "Activate a user (Admin)", description = "Activates an inactive user. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User activated successfully"),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "400", description = "User is already active or other error"),
+            @ApiResponse(responseCode = "403", description = "Forbidden: insufficient permissions")
+    })
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> activateUser(@PathVariable Long id) {
+    public ResponseEntity<?> activateUser(@Parameter(description = "User ID", example = "1") @PathVariable Long id) {
         try {
             userService.activateUser(id);
 
@@ -260,6 +342,11 @@ public class UserController {
     }
 
     @GetMapping("/statistics")
+    @Operation(summary = "Get user statistics (Admin)", description = "Retrieves various statistics about the user base. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Forbidden: insufficient permissions")
+    })
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getUserStatistics() {
         Map<String, Object> stats = new HashMap<>();
@@ -277,8 +364,13 @@ public class UserController {
     }
 
     @GetMapping("/inactive")
+    @Operation(summary = "Get inactive users (Admin)", description = "Retrieves a list of users who have been inactive for a specified number of days. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Inactive users retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Forbidden: insufficient permissions")
+    })
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getInactiveUsers(@RequestParam(defaultValue = "30") int days) {
+    public ResponseEntity<?> getInactiveUsers(@Parameter(description = "Number of days for inactivity", example = "30") @RequestParam(defaultValue = "30") int days) {
         List<UserResponseDto> inactiveUsers = userService.getInactiveUsers(days);
 
         Map<String, Object> response = new HashMap<>();

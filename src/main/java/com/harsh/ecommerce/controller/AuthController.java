@@ -8,6 +8,7 @@ import com.harsh.ecommerce.dto.UserResponseDto;
 import com.harsh.ecommerce.entity.Role;
 import com.harsh.ecommerce.service.UserService;
 import com.harsh.ecommerce.Security.JwtUtil;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
+@Tag(name = "🔐 Authentication", description = "User registration, login, and token management")
+
 public class AuthController {
 
     @Autowired

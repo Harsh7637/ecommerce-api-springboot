@@ -17,6 +17,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -29,6 +31,40 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private UserDetailsServiceImpl userDetailsService;
 
+    // List of paths that don't require JWT authentication
+    private final List<String> publicPaths = Arrays.asList(
+            // Auth endpoints
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/webhooks/",
+
+            // Public API endpoints
+            "/api/products",
+            "/api/categories",
+            "/api/test",
+
+            // Frontend HTML pages (served by WebController)
+            "/",
+            "/home",
+            "/login",
+            "/register",
+            "/products",
+            "/product/",
+
+            // Static resources
+            "/css/",
+            "/js/",
+            "/images/",
+            "/webjars/",
+
+            // Swagger
+            "/swagger-ui",
+            "/v3/api-docs",
+
+            // H2 Console
+            "/h2-console"
+    );
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -37,12 +73,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         logger.info("=== JWT Filter Processing: {} {} ===", request.getMethod(), path);
 
-        // ✅ Skip JWT check for auth & webhook endpoints
-        if (path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register") || path.startsWith("/api/webhooks/")) {
-            logger.info("Skipping JWT validation for auth endpoint: {}", path);
+        // ✅ Skip JWT check for public paths
+        if (shouldSkipJwtValidation(path)) {
+            logger.info("✅ Skipping JWT validation for public path: {}", path);
             filterChain.doFilter(request, response);
             return;
         }
+
+        logger.info("🔒 JWT validation required for path: {}", path);
 
         try {
             String jwt = parseJwt(request);
@@ -88,7 +126,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     logger.warn("❌ JWT token validation failed");
                 }
             } else {
-                logger.warn("❌ No JWT token found in request");
+                logger.warn("❌ No JWT token found in request for protected path: {}", path);
             }
         } catch (Exception e) {
             logger.error("❌ Error in JWT authentication: {}", e.getMessage(), e);
@@ -99,6 +137,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         logger.info("Final authentication status: {}", isAuthenticated ? "AUTHENTICATED" : "NOT AUTHENTICATED");
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Check if the request path should skip JWT validation
+     */
+    private boolean shouldSkipJwtValidation(String path) {
+        return publicPaths.stream().anyMatch(publicPath -> {
+            if (publicPath.endsWith("/")) {
+                return path.startsWith(publicPath);
+            } else {
+                return path.equals(publicPath) || path.startsWith(publicPath + "/");
+            }
+        });
     }
 
     private String parseJwt(HttpServletRequest request) {

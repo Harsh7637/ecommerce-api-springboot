@@ -1,8 +1,14 @@
 package com.harsh.ecommerce.controller;
 
-import com.harsh.ecommerce.dto.ApiResponse;
 import com.harsh.ecommerce.dto.ProductReviewDto;
 import com.harsh.ecommerce.service.ProductReviewService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,15 +23,20 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/admin/reviews")
 @PreAuthorize("hasRole('ADMIN')")
+@CrossOrigin(origins = "*")
+@Tag(name = "👨‍💼 Admin - Reviews", description = "Review moderation (admin only)")
 public class AdminReviewController {
 
     @Autowired
     private ProductReviewService productReviewService;
 
-    // GET /api/admin/reviews?page=0&size=10 - Get all reviews with pagination
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ProductReviewDto>>> getAllReviews(
+    @Operation(summary = "Get all reviews (Admin)", description = "Retrieves all product reviews, including pending and approved ones, with pagination. Admin only.")
+    @ApiResponse(responseCode = "200", description = "All reviews retrieved successfully")
+    public ResponseEntity<com.harsh.ecommerce.dto.ApiResponse<List<ProductReviewDto>>> getAllReviews(
+            @Parameter(description = "Page number (0-based)", example = "0")
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Number of items per page", example = "10")
             @RequestParam(defaultValue = "10") int size) {
 
         List<ProductReviewDto> reviews = productReviewService.getAllReviews();
@@ -38,30 +49,52 @@ public class AdminReviewController {
                 Math.min(end, reviews.size())
         );
 
-        return ResponseEntity.ok(new ApiResponse<>(true, "All reviews retrieved successfully", paginatedReviews));
+        return ResponseEntity.ok(new com.harsh.ecommerce.dto.ApiResponse<>(true, "All reviews retrieved successfully", paginatedReviews));
     }
 
     @GetMapping("/pending")
-    public ResponseEntity<ApiResponse<List<ProductReviewDto>>> getPendingReviews() {
+    @Operation(summary = "Get pending reviews (Admin)", description = "Retrieves a list of all reviews that are awaiting moderation. Admin only.")
+    @ApiResponse(responseCode = "200", description = "Pending reviews retrieved successfully")
+    public ResponseEntity<com.harsh.ecommerce.dto.ApiResponse<List<ProductReviewDto>>> getPendingReviews() {
         List<ProductReviewDto> reviews = productReviewService.getPendingReviews();
-        return ResponseEntity.ok(new ApiResponse<>(true, "Pending reviews retrieved successfully", reviews));
+        return ResponseEntity.ok(new com.harsh.ecommerce.dto.ApiResponse<>(true, "Pending reviews retrieved successfully", reviews));
     }
 
     @GetMapping("/product/{productId}")
-    public ResponseEntity<ApiResponse<List<ProductReviewDto>>> getAllProductReviews(@PathVariable Long productId) {
+    @Operation(summary = "Get all reviews for a product (Admin)", description = "Retrieves all reviews, both pending and approved, for a specific product. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "All product reviews retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Product not found")
+    })
+    public ResponseEntity<com.harsh.ecommerce.dto.ApiResponse<List<ProductReviewDto>>> getAllProductReviews(
+            @Parameter(description = "Product ID", example = "1")
+            @PathVariable Long productId) {
         List<ProductReviewDto> reviews = productReviewService.getAllReviewsByProductId(productId);
-        return ResponseEntity.ok(new ApiResponse<>(true, "All product reviews retrieved successfully", reviews));
+        return ResponseEntity.ok(new com.harsh.ecommerce.dto.ApiResponse<>(true, "All product reviews retrieved successfully", reviews));
     }
 
     @PutMapping("/{reviewId}/approve")
-    public ResponseEntity<ApiResponse<ProductReviewDto>> approveReview(@PathVariable Long reviewId) {
+    @Operation(summary = "Approve a review (Admin)", description = "Approves a pending review, making it visible to the public. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Review approved successfully"),
+            @ApiResponse(responseCode = "404", description = "Review not found")
+    })
+    public ResponseEntity<com.harsh.ecommerce.dto.ApiResponse<ProductReviewDto>> approveReview(
+            @Parameter(description = "Review ID", example = "1")
+            @PathVariable Long reviewId) {
         ProductReviewDto review = productReviewService.approveReview(reviewId);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Review approved successfully", review));
+        return ResponseEntity.ok(new com.harsh.ecommerce.dto.ApiResponse<>(true, "Review approved successfully", review));
     }
 
-    // PUT /api/admin/reviews/{reviewId}/moderate - Moderate review with approval status and notes
     @PutMapping("/{reviewId}/moderate")
-    public ResponseEntity<ApiResponse<ProductReviewDto>> moderateReview(
+    @Operation(summary = "Moderate a review (Admin)", description = "Updates a review's moderation status and adds notes. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Review moderated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @ApiResponse(responseCode = "404", description = "Review not found")
+    })
+    public ResponseEntity<com.harsh.ecommerce.dto.ApiResponse<ProductReviewDto>> moderateReview(
+            @Parameter(description = "Review ID", example = "1")
             @PathVariable Long reviewId,
             @RequestBody Map<String, Object> moderationRequest) {
 
@@ -75,12 +108,19 @@ public class AdminReviewController {
         ProductReviewDto review = productReviewService.moderateReview(reviewId, approved, moderatorNotes);
 
         String message = approved ? "Review approved successfully" : "Review rejected successfully";
-        return ResponseEntity.ok(new ApiResponse<>(true, message, review));
+        return ResponseEntity.ok(new com.harsh.ecommerce.dto.ApiResponse<>(true, message, review));
     }
 
     @DeleteMapping("/{reviewId}")
-    public ResponseEntity<ApiResponse<String>> deleteReview(@PathVariable Long reviewId) {
+    @Operation(summary = "Delete a review (Admin)", description = "Deletes a review from the system. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Review deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Review not found")
+    })
+    public ResponseEntity<com.harsh.ecommerce.dto.ApiResponse<String>> deleteReview(
+            @Parameter(description = "Review ID", example = "1")
+            @PathVariable Long reviewId) {
         productReviewService.deleteReviewByAdmin(reviewId);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Review deleted successfully", null));
+        return ResponseEntity.ok(new com.harsh.ecommerce.dto.ApiResponse<>(true, "Review deleted successfully", null));
     }
 }

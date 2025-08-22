@@ -5,7 +5,8 @@ import com.harsh.ecommerce.dto.ApiResponse;
 import com.harsh.ecommerce.dto.CartDto;
 import com.harsh.ecommerce.dto.UpdateCartItemDto;
 import com.harsh.ecommerce.service.CartService;
-import com.harsh.ecommerce.service.UserService; // ADD THIS IMPORT
+import com.harsh.ecommerce.service.UserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,12 +17,14 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/cart")
+@CrossOrigin(origins = "*")
+@Tag(name = "👤 User - Cart", description = "Shopping cart operations (requires authentication)")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
 public class CartController {
 
     private final CartService cartService;
-    private final UserService userService; // ADD THIS
+    private final UserService userService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<CartDto>> getCart() {

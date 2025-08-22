@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - TechStore</title>
+
+    <!-- Bootstrap CSS -->
+    <link th:href="@{/webjars/bootstrap/5.3.2/css/bootstrap.min.css}" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link th:href="@{/webjars/font-awesome/6.4.0/css/all.min.css}" rel="stylesheet">
+
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 100px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="%23ffffff" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        }
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+        .product-card {
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            height: 100%;
+        }
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+        .product-image {
+            height: 200px;
+            object-fit: cover;
+            background: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+        }
+        .price {
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 1.3rem;
+        }
+        .category-card {
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+            height: 120px;
+        }
+        .category-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+        .feature-icon {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+        .stats-section {
+            background: #f8f9fa;
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation (same as base layout) -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <div class="container">
+        <a class="navbar-brand" th:href="@{/}">
+            <i class="fas fa-store"></i> TechStore
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" th:href="@{/}">
+                        <i class="fas fa-home"></i> Home
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/products}">
+                        <i class="fas fa-box"></i> Products
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Search Form -->
+            <form class="d-flex me-3" th:action="@{/products}" method="get">
+                <input class="form-control me-2" type="search" name="search" placeholder="Search products..." aria-label="Search">
+                <button class="btn btn-outline-light" type="submit">
+                    <i class="fas fa-search"></i>
+                </button>
+            </form>
+
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/login}">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/register}">
+                        <i class="fas fa-user-plus"></i> Register
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container hero-content">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">
+                    Welcome to <span class="text-warning">TechStore</span>
+                </h1>
+                <p class="lead mb-4">
+                    Discover cutting-edge technology and innovative devices. From AI-powered smart homes to premium audio systems, find everything you need for your digital lifestyle.
+                </p>
+                <div class="d-flex gap-3">
+                    <a th:href="@{/products}" class="btn btn-warning btn-lg px-4">
+                        <i class="fas fa-shopping-bag"></i> Shop Now
+                    </a>
+                    <a th:href="@{/swagger-ui.html}" class="btn btn-outline-light btn-lg px-4">
+                        <i class="fas fa-code"></i> API Docs
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <div class="position-relative">
+                    <i class="fas fa-laptop-code" style="font-size: 15rem; opacity: 0.1;"></i>
+                    <div class="position-absolute top-50 start-50 translate-middle">
+                        <i class="fas fa-store text-warning" style="font-size: 8rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <i class="fas fa-shipping-fast feature-icon"></i>
+                <h4>Fast Shipping</h4>
+                <p class="text-muted">Free delivery on orders over $100</p>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <i class="fas fa-shield-alt feature-icon"></i>
+                <h4>Secure Payments</h4>
+                <p class="text-muted">Powered by Stripe with SSL encryption</p>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <i class="fas fa-headset feature-icon"></i>
+                <h4>24/7 Support</h4>
+                <p class="text-muted">Expert support whenever you need it</p>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <i class="fas fa-undo-alt feature-icon"></i>
+                <h4>Easy Returns</h4>
+                <p class="text-muted">30-day hassle-free return policy</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Categories Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">Shop by Category</h2>
+            <p class="lead text-muted">Explore our diverse range of technology products</p>
+        </div>
+        <div class="row">
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card category-card">
+                    <div class="card-body d-flex align-items-center">
+                        <i class="fas fa-robot text-primary me-3" style="font-size: 3rem;"></i>
+                        <div>
+                            <h5 class="card-title mb-1">AI Technology</h5>
+                            <p class="card-text text-muted">Smart devices & AI solutions</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card category-card">
+                    <div class="card-body d-flex align-items-center">
+                        <i class="fas fa-headphones text-success me-3" style="font-size: 3rem;"></i>
+                        <div>
+                            <h5 class="card-title mb-1">Audio Systems</h5>
+                            <p class="card-text text-muted">Premium sound equipment</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card category-card">
+                    <div class="card-body d-flex align-items-center">
+                        <i class="fas fa-heartbeat text-danger me-3" style="font-size: 3rem;"></i>
+                        <div>
+                            <h5 class="card-title mb-1">Health Technology</h5>
+                            <p class="card-text text-muted">Fitness & wellness devices</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Products Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">Featured Products</h2>
+            <p class="lead text-muted">Handpicked selection of our best-selling items</p>
+        </div>
+        <div class="row" id="featuredProducts">
+            <!-- Products will be loaded here -->
+            <div class="col-12 text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3 text-muted">Loading featured products...</p>
+            </div>
+        </div>
+        <div class="text-center mt-4">
+            <a th:href="@{/products}" class="btn btn-primary btn-lg">
+                <i class="fas fa-arrow-right"></i> View All Products
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="py-5 stats-section">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-number" id="totalProducts">0</div>
+                <h6 class="text-muted">Products</h6>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-number">5000+</div>
+                <h6 class="text-muted">Happy Customers</h6>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-number">24/7</div>
+                <h6 class="text-muted">Support</h6>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-number">99.9%</div>
+                <h6 class="text-muted">Uptime</h6>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Newsletter Section -->
+<section class="py-5 bg-dark text-light">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h3>Stay Updated</h3>
+                <p class="mb-0">Subscribe to our newsletter for the latest tech news and exclusive offers.</p>
+            </div>
+            <div class="col-lg-6">
+                <form class="d-flex">
+                    <input type="email" class="form-control me-2" placeholder="Enter your email">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-paper-plane"></i> Subscribe
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-dark text-light py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <h5><i class="fas fa-store"></i> TechStore</h5>
+                <p>Your one-stop destination for cutting-edge technology and innovative devices.</p>
+                <div>
+                    <a href="#" class="text-light me-3"><i class="fab fa-facebook"></i></a>
+                    <a href="#" class="text-light me-3"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="text-light me-3"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="text-light"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <h6>Shop</h6>
+                <ul class="list-unstyled">
+                    <li><a th:href="@{/products}" class="text-light">All Products</a></li>
+                    <li><a href="#" class="text-light">AI Technology</a></li>
+                    <li><a href="#" class="text-light">Audio Systems</a></li>
+                    <li><a href="#" class="text-light">Health Tech</a></li>
+                </ul>
+            </div>
+            <div class="col-md-2">
+                <h6>Account</h6>
+                <ul class="list-unstyled">
+                    <li><a th:href="@{/profile}" class="text-light">My Profile</a></li>
+                    <li><a th:href="@{/orders}" class="text-light">Order History</a></li>
+                    <li><a th:href="@{/cart}" class="text-light">Shopping Cart</a></li>
+                </ul>
+            </div>
+            <div class="col-md-2">
+                <h6>Support</h6>
+                <ul class="list-unstyled">
+                    <li><a href="#" class="text-light">Contact Us</a></li>
+                    <li><a href="#" class="text-light">FAQ</a></li>
+                    <li><a href="#" class="text-light">Shipping Info</a></li>
+                    <li><a href="#" class="text-light">Returns</a></li>
+                </ul>
+            </div>
+            <div class="col-md-2">
+                <h6>Developer</h6>
+                <ul class="list-unstyled">
+                    <li><a th:href="@{/swagger-ui.html}" class="text-light">API Documentation</a></li>
+                    <li><a href="#" class="text-light">API Status</a></li>
+                </ul>
+            </div>
+        </div>
+        <hr class="my-4">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <p class="mb-0">&copy; 2024 TechStore. All rights reserved.</p>
+            </div>
+            <div class="col-md-6 text-end">
+                <p class="mb-0">Built with Spring Boot & ❤️</p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Scripts -->
+<script th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"></script>
+<script th:src="@{/webjars/bootstrap/5.3.2/js/bootstrap.bundle.min.js}"></script>
+
+<script>
+    $(document).ready(function() {
+        loadFeaturedProducts();
+        loadProductStats();
+    });
+
+    function loadFeaturedProducts() {
+        $.ajax({
+            url: '/api/products/featured',
+            method: 'GET',
+            success: function(response) {
+                if (response.success && response.products) {
+                    displayFeaturedProducts(response.products.slice(0, 4)); // Show only first 4
+                } else {
+                    showNoProducts();
+                }
+            },
+            error: function() {
+                showNoProducts();
+            }
+        });
+    }
+
+    function displayFeaturedProducts(products) {
+        let html = '';
+        products.forEach(product => {
+            html += `
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card product-card h-100">
+                        <div class="product-image card-img-top d-flex align-items-center justify-content-center" style="height: 200px;">
+                            ${product.images && product.images.length > 0
+                                ? `<img src="${product.images[0]}" class="img-fluid" alt="${product.name}" style="max-height: 180px; object-fit: contain;">`
+                                : `<i class="fas fa-box fa-3x text-muted"></i>`
+                            }
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">${product.name}</h5>
+                            <p class="card-text text-muted flex-grow-1">${product.description.substring(0, 100)}...</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="price">${parseFloat(product.price).toFixed(2)}</span>
+                                <div class="btn-group">
+                                    <a href="/product/${product.id}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button onclick="addToCart(${product.id})" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-cart-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        $('#featuredProducts').html(html);
+    }
+
+    function showNoProducts() {
+        $('#featuredProducts').html(`
+            <div class="col-12 text-center">
+                <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No featured products available</h5>
+                <p class="text-muted">Check back soon for exciting new products!</p>
+            </div>
+        `);
+    }
+
+    function loadProductStats() {
+        $.ajax({
+            url: '/api/products',
+            method: 'GET',
+            data: { size: 1 },
+            success: function(response) {
+                if (response.success) {
+                    $('#totalProducts').text(response.totalItems || '0');
+                }
+            }
+        });
+    }
+
+    function addToCart(productId) {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+            window.location.href = '/login';
+            return;
+        }
+
+        $.ajax({
+            url: '/api/cart/add',
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + authToken,
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({
+                productId: productId,
+                quantity: 1
+            }),
+            success: function(response) {
+                if (response.success) {
+                    showAlert('Product added to cart!', 'success');
+                } else {
+                    showAlert(response.message, 'danger');
+                }
+            },
+            error: function(xhr) {
+                const response = xhr.responseJSON;
+                showAlert(response?.message || 'Failed to add to cart', 'danger');
+            }
+        });
+    }
+
+    function showAlert(message, type) {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show position-fixed"
+                 style="top: 100px; right: 20px; z-index: 1050;">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        $('body').append(alertHtml);
+
+        setTimeout(() => {
+            $('.alert').alert('close');
+        }, 3000);
+    }
+</script>
+</body>
+</html>

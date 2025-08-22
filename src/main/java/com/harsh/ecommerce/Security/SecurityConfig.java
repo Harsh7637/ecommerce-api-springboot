@@ -32,13 +32,31 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // Completely disable CSRF for stateless API
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/api/**", "/swagger-ui/**", "/v3/api-docs/**")
+                        .disable()
+                )
                 .authorizeHttpRequests(authz -> authz
+                        // API Endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/test/**").permitAll()
-                        .requestMatchers("/api/webhooks/**").permitAll() // Allow webhook access
+                        .requestMatchers("/api/webhooks/**").permitAll()
+                        .requestMatchers("/api/products/**").permitAll() // Public product browsing
+                        .requestMatchers("/api/categories/**").permitAll() // Public category browsing
                         .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
+                        // Swagger/OpenAPI
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+
+                        // Static Resources & WebJars
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
+
+                        // Thymeleaf Frontend Pages
+                        .requestMatchers("/", "/home", "/login", "/register", "/products", "/product/**").permitAll()
+                        .requestMatchers("/cart", "/checkout", "/orders", "/profile").authenticated()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+
+                        // API Admin & Authenticated routes
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

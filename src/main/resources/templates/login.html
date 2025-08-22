@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - TechStore</title>
+
+    <!-- Bootstrap CSS -->
+    <link th:href="@{/webjars/bootstrap/5.3.2/css/bootstrap.min.css}" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link th:href="@{/webjars/font-awesome/6.4.0/css/all.min.css}" rel="stylesheet">
+
+    <style>
+        .login-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        .form-floating > .form-control {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+        }
+        .form-floating > .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            background: white;
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+        }
+        .social-btn {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 10px;
+            transition: all 0.3s ease;
+        }
+        .social-btn:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+        .brand-logo {
+            color: #667eea;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+<div class="login-container d-flex align-items-center justify-content-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="card login-card">
+                    <div class="card-body p-5">
+                        <!-- Logo & Title -->
+                        <div class="text-center mb-4">
+                            <i class="fas fa-store brand-logo"></i>
+                            <h2 class="fw-bold text-dark">Welcome Back</h2>
+                            <p class="text-muted">Sign in to your TechStore account</p>
+                        </div>
+
+                        <!-- Alert Area -->
+                        <div id="alertArea"></div>
+
+                        <!-- Login Form -->
+                        <form id="loginForm">
+                            <div class="form-floating mb-3">
+                                <input type="email" class="form-control" id="email" placeholder="name@example.com" required>
+                                <label for="email"><i class="fas fa-envelope me-2"></i>Email address</label>
+                            </div>
+
+                            <div class="form-floating mb-4">
+                                <input type="password" class="form-control" id="password" placeholder="Password" required>
+                                <label for="password"><i class="fas fa-lock me-2"></i>Password</label>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="rememberMe">
+                                    <label class="form-check-label text-muted" for="rememberMe">
+                                        Remember me
+                                    </label>
+                                </div>
+                                <a href="#" class="text-decoration-none">Forgot password?</a>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-login w-100 text-white mb-4">
+                                <i class="fas fa-sign-in-alt me-2"></i>
+                                <span id="loginBtnText">Sign In</span>
+                                <div class="spinner-border spinner-border-sm ms-2 d-none" id="loginSpinner" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </button>
+                        </form>
+
+                        <!-- Divider -->
+                        <div class="text-center mb-4">
+                            <small class="text-muted">or continue with</small>
+                        </div>
+
+                        <!-- Social Login -->
+                        <div class="row g-2 mb-4">
+                            <div class="col-6">
+                                <button class="btn social-btn w-100">
+                                    <i class="fab fa-google text-danger"></i>
+                                    <span class="ms-2">Google</span>
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn social-btn w-100">
+                                    <i class="fab fa-github text-dark"></i>
+                                    <span class="ms-2">GitHub</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Register Link -->
+                        <div class="text-center">
+                            <p class="text-muted mb-0">
+                                Don't have an account?
+                                <a th:href="@{/register}" class="text-decoration-none fw-bold">Create one</a>
+                            </p>
+                        </div>
+
+                        <!-- Demo Credentials -->
+                        <div class="mt-4 p-3 bg-light rounded">
+                            <small class="text-muted d-block mb-2"><strong>Demo Credentials:</strong></small>
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted">
+                                        <strong>User:</strong><br>
+                                        sarah.thompson@gmail.com<br>
+                                        SecurePass456
+                                    </small>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">
+                                        <strong>Admin:</strong><br>
+                                        michael.johnson@techstore.com<br>
+                                        AdminPower2024
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Back to Home -->
+                <div class="text-center mt-4">
+                    <a th:href="@{/}" class="text-white text-decoration-none">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"></script>
+<script th:src="@{/webjars/bootstrap/5.3.2/js/bootstrap.bundle.min.js}"></script>
+
+<script>
+    $(document).ready(function() {
+        // Check if user is already logged in
+        if (localStorage.getItem('authToken')) {
+            window.location.href = '/';
+            return;
+        }
+
+        // Handle login form submission
+        $('#loginForm').on('submit', function(e) {
+            e.preventDefault();
+            handleLogin();
+        });
+
+        // Demo credential buttons
+        $('.demo-btn').on('click', function() {
+            const email = $(this).data('email');
+            const password = $(this).data('password');
+            $('#email').val(email);
+            $('#password').val(password);
+        });
+    });
+
+    function handleLogin() {
+        const email = $('#email').val();
+        const password = $('#password').val();
+
+        if (!email || !password) {
+            showAlert('Please fill in all fields', 'danger');
+            return;
+        }
+
+        // Show loading state
+        $('#loginBtnText').text('Signing in...');
+        $('#loginSpinner').removeClass('d-none');
+        $('#loginForm button').prop('disabled', true);
+
+        $.ajax({
+            url: '/api/auth/login',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                email: email,
+                password: password
+            }),
+            success: function(response) {
+                if (response.success && response.data) {
+                    // Store authentication token and user info
+                    localStorage.setItem('authToken', response.data.token);
+                    localStorage.setItem('currentUser', JSON.stringify(response.data.user));
+
+                    showAlert('Login successful! Redirecting...', 'success');
+
+                    // Redirect based on user role
+                    setTimeout(() => {
+                        if (response.data.user.roles && response.data.user.roles.includes('ADMIN')) {
+                            window.location.href = '/admin';
+                        } else {
+                            window.location.href = '/';
+                        }
+                    }, 1500);
+                } else {
+                    showAlert(response.message || 'Login failed', 'danger');
+                    resetLoginForm();
+                }
+            },
+            error: function(xhr) {
+                const response = xhr.responseJSON;
+                showAlert(response?.message || 'Login failed. Please try again.', 'danger');
+                resetLoginForm();
+            }
+        });
+    }
+
+    function resetLoginForm() {
+        $('#loginBtnText').text('Sign In');
+        $('#loginSpinner').addClass('d-none');
+        $('#loginForm button').prop('disabled', false);
+    }
+
+    function showAlert(message, type) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const iconClass = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+
+        const alertHtml = `
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                <i class="fas ${iconClass} me-2"></i>${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+
+        $('#alertArea').html(alertHtml);
+
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            $('.alert').alert('close');
+        }, 5000);
+    }
+
+    // Demo credentials click handlers
+    function fillDemoCredentials(email, password) {
+        $('#email').val(email);
+        $('#password').val(password);
+    }
+</script>
+</body>
+</html>

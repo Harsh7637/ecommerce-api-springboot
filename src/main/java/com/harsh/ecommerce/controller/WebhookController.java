@@ -4,6 +4,14 @@ import com.harsh.ecommerce.service.PaymentService;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
 import com.stripe.net.Webhook;
+import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +20,9 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/webhooks")
+@CrossOrigin(origins = "*")
+@Tag(name = "🔗 Webhooks", description = "External service webhooks (internal use)")
+@Hidden // Hides the entire controller from Swagger documentation, as per your request
 public class WebhookController {
 
     private final PaymentService paymentService;
@@ -32,6 +43,15 @@ public class WebhookController {
      * In production mode, Stripe's signature is verified for security.
      */
     @PostMapping("/stripe")
+    @Operation(summary = "Stripe webhook endpoint", description = "Endpoint for receiving and processing Stripe webhook events. This is for internal use and should not be directly called by clients.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Event processed successfully",
+                    content = @Content(schema = @Schema(implementation = Map.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid signature or payload",
+                    content = @Content(schema = @Schema(implementation = Map.class))),
+            @ApiResponse(responseCode = "500", description = "Internal server error",
+                    content = @Content(schema = @Schema(implementation = Map.class)))
+    })
     public ResponseEntity<?> handleStripeEvent(
             @RequestBody String payload,
             @RequestHeader(value = "Stripe-Signature", required = false) String sigHeader) {

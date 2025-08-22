@@ -12,8 +12,11 @@ import com.harsh.ecommerce.repository.CategoryRepository;
 import com.harsh.ecommerce.repository.ProductRepository;
 import com.harsh.ecommerce.specification.ProductSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +35,8 @@ public class ProductService {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    // ADMIN ONLY METHODS
+    @PreAuthorize("hasRole('ADMIN')")
     public ProductResponseDto createProduct(ProductCreateDto productDto) {
         Category category = categoryRepository.findById(productDto.getCategoryId())
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + productDto.getCategoryId()));
@@ -54,7 +59,104 @@ public class ProductService {
         return new ProductResponseDto(savedProduct);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    public ProductResponseDto updateProduct(Long id, ProductCreateDto productDto) {
+        Product existingProduct = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+
+        Category category = categoryRepository.findById(productDto.getCategoryId())
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + productDto.getCategoryId()));
+
+        existingProduct.setName(productDto.getName());
+        existingProduct.setDescription(productDto.getDescription());
+        existingProduct.setPrice(productDto.getPrice());
+        existingProduct.setStockQuantity(productDto.getStockQuantity());
+        existingProduct.setCategory(category);
+        existingProduct.setSku(productDto.getSku());
+        existingProduct.setImages(productDto.getImages());
+        existingProduct.setWeight(productDto.getWeight());
+        existingProduct.setDimensions(productDto.getDimensions());
+        existingProduct.setIsActive(productDto.getIsActive());
+        existingProduct.setIsFeatured(productDto.getIsFeatured());
+        existingProduct.setSortOrder(productDto.getSortOrder());
+
+        Product updatedProduct = productRepository.save(existingProduct);
+        return new ProductResponseDto(updatedProduct);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @CacheEvict(value = "products", key = "#id")
+    public ProductResponseDto updateProductImage(Long id, String imageUrl) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+
+        List<String> currentImages = product.getImages();
+        if (currentImages == null) {
+            currentImages = new ArrayList<>();
+        }
+        currentImages.add(imageUrl);
+
+        product.setImages(currentImages);
+        Product updatedProduct = productRepository.save(product);
+        return new ProductResponseDto(updatedProduct);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public void deleteProduct(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+        productRepository.delete(product);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public void updateStock(Long productId, Integer newStock) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + productId));
+
+        product.setStockQuantity(newStock);
+        productRepository.save(product);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional(readOnly = true)
+    public List<ProductResponseDto> getLowStockProducts(Integer threshold) {
+        return productRepository.findLowStockProducts(threshold)
+                .stream()
+                .map(ProductResponseDto::new)
+                .collect(Collectors.toList());
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
+    public List<ProductResponseDto> getOutOfStockProducts() {
+        return productRepository.findOutOfStockProducts()
+                .stream()
+                .map(ProductResponseDto::new)
+                .collect(Collectors.toList());
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
+    public long getTotalActiveProducts() {
+        return productRepository.countActiveProducts();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
+    public BigDecimal getAveragePrice() {
+        return productRepository.getAveragePrice();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
+    public Long getTotalStock() {
+        return productRepository.getTotalStock();
+    }
+
+    // PUBLIC METHODS - NO @PreAuthorize NEEDED
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "products", key = "#id")
     public ProductResponseDto getProductById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
@@ -62,6 +164,7 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "products", key = "#slug")
     public ProductResponseDto getProductBySlug(String slug) {
         Product product = productRepository.findBySlug(slug)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found with slug: " + slug));
@@ -111,52 +214,6 @@ public class ProductService {
                 .map(ProductResponseDto::new);
     }
 
-    public ProductResponseDto updateProduct(Long id, ProductCreateDto productDto) {
-        Product existingProduct = productRepository.findById(id)
-                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
-
-        Category category = categoryRepository.findById(productDto.getCategoryId())
-                .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + productDto.getCategoryId()));
-
-        existingProduct.setName(productDto.getName());
-        existingProduct.setDescription(productDto.getDescription());
-        existingProduct.setPrice(productDto.getPrice());
-        existingProduct.setStockQuantity(productDto.getStockQuantity());
-        existingProduct.setCategory(category);
-        existingProduct.setSku(productDto.getSku());
-        existingProduct.setImages(productDto.getImages());
-        existingProduct.setWeight(productDto.getWeight());
-        existingProduct.setDimensions(productDto.getDimensions());
-        existingProduct.setIsActive(productDto.getIsActive());
-        existingProduct.setIsFeatured(productDto.getIsFeatured());
-        existingProduct.setSortOrder(productDto.getSortOrder());
-
-        Product updatedProduct = productRepository.save(existingProduct);
-        return new ProductResponseDto(updatedProduct);
-    }
-
-    // ✅ NEW METHOD: Update product image
-    public ProductResponseDto updateProductImage(Long id, String imageUrl) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
-
-        List<String> currentImages = product.getImages();
-        if (currentImages == null) {
-            currentImages = new ArrayList<>();
-        }
-        currentImages.add(imageUrl);
-
-        product.setImages(currentImages);
-        Product updatedProduct = productRepository.save(product);
-        return new ProductResponseDto(updatedProduct);
-    }
-
-    public void deleteProduct(Long id) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
-        productRepository.delete(product);
-    }
-
     @Transactional(readOnly = true)
     public Page<ProductResponseDto> getProductsByCategory(Long categoryId, Pageable pageable) {
         return productRepository.findByCategoryId(categoryId, pageable)
@@ -164,6 +221,7 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "featuredProducts")
     public List<ProductResponseDto> getFeaturedProducts() {
         return productRepository.findByIsFeaturedTrueAndIsActiveTrueOrderBySortOrderAsc()
                 .stream()
@@ -177,14 +235,9 @@ public class ProductService {
                 .map(ProductResponseDto::new);
     }
 
-    public void updateStock(Long productId, Integer newStock) {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + productId));
+    // AUTHENTICATED USER METHODS (Cart/Order operations)
 
-        product.setStockQuantity(newStock);
-        productRepository.save(product);
-    }
-
+    @PreAuthorize("isAuthenticated()")
     public void reduceStock(Long productId, Integer quantity) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + productId));
@@ -198,40 +251,9 @@ public class ProductService {
         productRepository.save(product);
     }
 
-    @Transactional(readOnly = true)
-    public List<ProductResponseDto> getLowStockProducts(Integer threshold) {
-        return productRepository.findLowStockProducts(threshold)
-                .stream()
-                .map(ProductResponseDto::new)
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public List<ProductResponseDto> getOutOfStockProducts() {
-        return productRepository.findOutOfStockProducts()
-                .stream()
-                .map(ProductResponseDto::new)
-                .collect(Collectors.toList());
-    }
-
     private Sort createSort(String sortBy, String sortDir) {
         Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ?
                 Sort.Direction.DESC : Sort.Direction.ASC;
         return Sort.by(direction, sortBy);
-    }
-
-    @Transactional(readOnly = true)
-    public long getTotalActiveProducts() {
-        return productRepository.countActiveProducts();
-    }
-
-    @Transactional(readOnly = true)
-    public BigDecimal getAveragePrice() {
-        return productRepository.getAveragePrice();
-    }
-
-    @Transactional(readOnly = true)
-    public Long getTotalStock() {
-        return productRepository.getTotalStock();
     }
 }

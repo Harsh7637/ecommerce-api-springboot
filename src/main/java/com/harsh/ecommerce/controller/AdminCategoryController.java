@@ -3,6 +3,13 @@ package com.harsh.ecommerce.controller;
 import com.harsh.ecommerce.dto.CategoryDto;
 import com.harsh.ecommerce.service.CategoryService;
 import com.harsh.ecommerce.service.CloudinaryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -23,6 +30,7 @@ import java.util.Map;
 @RequestMapping("/api/admin/categories")
 @PreAuthorize("hasRole('ADMIN')")
 @CrossOrigin(origins = "*")
+@Tag(name = "👨‍💼 Admin - Categories", description = "Category management (admin only)")
 public class AdminCategoryController {
 
     @Autowired
@@ -32,6 +40,12 @@ public class AdminCategoryController {
     private CloudinaryService cloudinaryService;
 
     @PostMapping
+    @Operation(summary = "Create a new category", description = "Creates a new category. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Category created successfully",
+                    content = @Content(schema = @Schema(implementation = CategoryDto.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid category data")
+    })
     public ResponseEntity<?> createCategory(@Valid @RequestBody CategoryDto categoryDto) {
         try {
             CategoryDto category = categoryService.createCategory(categoryDto);
@@ -46,10 +60,20 @@ public class AdminCategoryController {
     }
 
     @GetMapping
+    @Operation(summary = "Get all categories for admin", description = "Retrieves a paginated list of all categories. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Categories retrieved successfully",
+                    content = @Content(schema = @Schema(implementation = Page.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+    })
     public ResponseEntity<?> getAllCategories(
+            @Parameter(description = "Page number (0-based)", example = "0")
             @RequestParam(defaultValue = "0") Integer page,
+            @Parameter(description = "Number of items per page", example = "10")
             @RequestParam(defaultValue = "10") Integer size,
+            @Parameter(description = "Sort field", example = "sortOrder", schema = @Schema(allowableValues = {"name", "sortOrder", "createdAt"}))
             @RequestParam(defaultValue = "sortOrder") String sortBy,
+            @Parameter(description = "Sort direction", example = "asc", schema = @Schema(allowableValues = {"asc", "desc"}))
             @RequestParam(defaultValue = "asc") String sortDir) {
         try {
             Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
@@ -68,7 +92,13 @@ public class AdminCategoryController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getCategoryById(@PathVariable Long id) {
+    @Operation(summary = "Get category by ID", description = "Retrieves a single category by its ID. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Category retrieved successfully",
+                    content = @Content(schema = @Schema(implementation = CategoryDto.class))),
+            @ApiResponse(responseCode = "404", description = "Category not found")
+    })
+    public ResponseEntity<?> getCategoryById(@Parameter(description = "Category ID", example = "1") @PathVariable Long id) {
         try {
             CategoryDto category = categoryService.getCategoryById(id);
             Map<String, Object> response = new HashMap<>();
@@ -81,7 +111,14 @@ public class AdminCategoryController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateCategory(@PathVariable Long id, @Valid @RequestBody CategoryDto categoryDto) {
+    @Operation(summary = "Update a category", description = "Updates an existing category's details by ID. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Category updated successfully",
+                    content = @Content(schema = @Schema(implementation = CategoryDto.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid category data"),
+            @ApiResponse(responseCode = "404", description = "Category not found")
+    })
+    public ResponseEntity<?> updateCategory(@Parameter(description = "Category ID", example = "1") @PathVariable Long id, @Valid @RequestBody CategoryDto categoryDto) {
         try {
             CategoryDto category = categoryService.updateCategory(id, categoryDto);
             Map<String, Object> response = new HashMap<>();
@@ -95,7 +132,12 @@ public class AdminCategoryController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteCategory(@PathVariable Long id) {
+    @Operation(summary = "Delete a category", description = "Deletes a category by ID. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Category deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Category not found")
+    })
+    public ResponseEntity<?> deleteCategory(@Parameter(description = "Category ID", example = "1") @PathVariable Long id) {
         try {
             categoryService.deleteCategory(id);
             Map<String, Object> response = new HashMap<>();
@@ -108,7 +150,12 @@ public class AdminCategoryController {
     }
 
     @PutMapping("/{id}/toggle-status")
-    public ResponseEntity<?> toggleCategoryStatus(@PathVariable Long id) {
+    @Operation(summary = "Toggle category status", description = "Activates or deactivates a category. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Category status updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Category not found")
+    })
+    public ResponseEntity<?> toggleCategoryStatus(@Parameter(description = "Category ID", example = "1") @PathVariable Long id) {
         try {
             CategoryDto category = categoryService.toggleCategoryStatus(id);
             Map<String, Object> response = new HashMap<>();
@@ -122,6 +169,8 @@ public class AdminCategoryController {
     }
 
     @GetMapping("/analytics")
+    @Operation(summary = "Get category analytics", description = "Retrieves analytics for categories, including total count and product counts. Admin only.")
+    @ApiResponse(responseCode = "200", description = "Analytics retrieved successfully")
     public ResponseEntity<?> getCategoryAnalytics() {
         try {
             Map<String, Object> analytics = new HashMap<>();
@@ -138,7 +187,13 @@ public class AdminCategoryController {
     }
 
     @PostMapping("/{id}/upload-image")
-    public ResponseEntity<?> uploadCategoryImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+    @Operation(summary = "Upload category image", description = "Uploads an image for a specific category and updates its image URL. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Image uploaded successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid file or upload failed"),
+            @ApiResponse(responseCode = "404", description = "Category not found")
+    })
+    public ResponseEntity<?> uploadCategoryImage(@Parameter(description = "Category ID", example = "1") @PathVariable Long id, @RequestParam("file") MultipartFile file) {
         try {
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body(createErrorResponse("Please select a file to upload"));
@@ -160,6 +215,11 @@ public class AdminCategoryController {
     }
 
     @PostMapping("/upload-image")
+    @Operation(summary = "Upload image standalone", description = "Uploads an image without associating it with a specific category. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Image uploaded successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid file or upload failed")
+    })
     public ResponseEntity<?> uploadCategoryImageStandalone(@RequestParam("file") MultipartFile file) {
         try {
             if (file.isEmpty()) {
@@ -180,6 +240,11 @@ public class AdminCategoryController {
     }
 
     @DeleteMapping("/delete-image")
+    @Operation(summary = "Delete category image", description = "Deletes an image from the cloud storage using its URL. Admin only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Image deleted successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid image URL or delete failed")
+    })
     public ResponseEntity<?> deleteCategoryImage(@RequestParam("imageUrl") String imageUrl) {
         try {
             String publicId = cloudinaryService.extractPublicId(imageUrl);
